@@ -1,0 +1,68 @@
+var express = require('express');
+var fs = require('fs');
+var request = require('request');
+var cheerio = require('cheerio');
+//var app     = express();
+//var cronJob = require('cron').CronJob;
+url = 'http://coupons.compareraja.in/all-stores-b';
+request(url, function(error, response, html)
+{
+ if(!error)
+ {
+  var $ = cheerio.load(html);
+  var arra=new Array();
+  var len=$('.stors-lst').children().length;
+  var ss=new Array();
+  ss=$('.stors-lst').children();
+  var ou=new Array();
+  for(i=0;i<len;i++)
+  {
+   ou[i]=$(ss[i]).children().attr('href');
+   console.log(ou[i]);
+   var sss,out=new Array();
+   var urls=ou[i];
+   request(urls, function(error, response, html)
+   {
+    if(!error)
+    {
+     var r= cheerio.load(html);
+     var leen=r('.stors-lst').children().children().length;
+     sss=r('.stors-lst').children().children();
+     for(j=0;j<leen;j++)
+     {
+	  out[j]=r(sss[j]).children().attr('href');
+	  var coupurl=out[j];
+	  request(coupurl, function(error, response, html)
+	  {
+	   if(!error)
+	   {
+	    var cou = cheerio.load(html);
+	    var arr=new Array();
+	    var arr=cou('.latcp-blk');
+	    var len=cou('.latcp-blk').length;
+	    var le=new Array();
+	    var json={caption:"",images:"",coup:""};
+        for(var i=0;i<len;i++)
+	    {	
+	     var ca=cou(arr[i]).find('.lc-mertxt').text();
+		 json.caption=ca.replace(/"(\\.|[^"\\])*"/g, '');
+		 var lens=cou(arr[i]).find('.lc-merlogo');
+		 var imgurl=lens.first().children().children().attr('src');
+		 json.images=imgurl;
+		 var le=cou(arr[i]).find('.coupontxt').val();
+		 json.coup=le;
+		 fs.appendFile('coupons.json', JSON.stringify(json, null, 4), function (err) 
+	   	 {
+		  if (err) throw err;
+		 });	
+	    }
+	    console.log('The '+json+' was appended to file!');
+	   }
+	  });
+     }
+    }
+   });
+  }
+ }
+});
+ 
